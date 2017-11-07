@@ -3,21 +3,34 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 25
     buildToolsVersion "27.0.0"
+
     defaultConfig {
         applicationId "demo.liyf.voicedemo"
-        minSdkVersion 15
+        minSdkVersion 23
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
+
+    /* signingConfigs {
+        release {
+            storeFile file("mscKeys.jks")
+            storePassword "password"
+            keyAlias "ReleaseKey"
+            keyPassword "password"
+            v2SigningEnabled false
+        }
+    }*/
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     sourceSets {
         main {
             jniLibs.srcDirs = ['libs']
@@ -35,4 +48,7 @@ dependencies {
     compile 'com.android.support:design:25.3.1'
     compile 'com.android.support:support-vector-drawable:25.3.1'
     testCompile 'junit:junit:4.12'
+
+    compile files('libs/Msc.jar')
+    compile files('libs/Sunflower.jar')
 }
