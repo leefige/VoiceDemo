@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 startActivityForResult(new Intent(MainActivity.this,
-                        InputActivity.class), REQUEST_OF_INPUT_BTN);
+                        VoiceActivity.class), REQUEST_OF_INPUT_BTN);
             }
         });
     }
@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         // TODO Auto-generated method stub
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_OF_INPUT_BTN && resultCode == InputActivity.RESULT_OF_INPUT_BTN) {
+        if (requestCode == REQUEST_OF_INPUT_BTN && resultCode == VoiceActivity.RESULT_OF_INPUT_BTN) {
             String result = data.getStringExtra("input");
             ((EditText)findViewById(R.id.inputLine)).setText(result);
         }

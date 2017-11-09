@@ -1,22 +1,24 @@
 package demo.liyf.voicedemo;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
-import android.widget.EditText;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.iflytek.cloud.ErrorCode;
 import com.iflytek.cloud.InitListener;
-import com.iflytek.cloud.LexiconListener;
 import com.iflytek.cloud.RecognizerListener;
 import com.iflytek.cloud.RecognizerResult;
 import com.iflytek.cloud.SpeechConstant;
@@ -24,11 +26,6 @@ import com.iflytek.cloud.SpeechError;
 import com.iflytek.cloud.SpeechRecognizer;
 import com.iflytek.cloud.SpeechUtility;
 import com.iflytek.cloud.ui.RecognizerDialog;
-import com.iflytek.cloud.ui.RecognizerDialogListener;
-import com.iflytek.cloud.util.ContactManager;
-import com.iflytek.cloud.util.ContactManager.ContactListener;
-//import com.iflytek.speech.setting.IatSettings;
-import com.iflytek.speech.util.FucUtil;
 import com.iflytek.speech.util.JsonParser;
 import com.iflytek.sunflower.FlowerCollector;
 
@@ -38,25 +35,22 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
-public class InputActivity extends AppCompatActivity {
+public class VoiceActivity extends AppCompatActivity {
 
-    private static String TAG = InputActivity.class.getSimpleName();
-    // 语音听写对象
-    private SpeechRecognizer mIat;
-    // 语音听写UI
-    private RecognizerDialog mIatDialog;
-    // 用HashMap存储听写结果
-    private HashMap<String, String> mIatResults = new LinkedHashMap<String, String>();
+    private static String TAG = VoiceActivity.class.getSimpleName();
+
+    private SpeechRecognizer mIat;          // 语音听写对象
+    private RecognizerDialog mIatDialog;    // 语音听写UI
+    private HashMap<String, String> mIatResults = new LinkedHashMap<>();        // 用HashMap存储听写结果
 
     private TextView mResultText;
     private Toast mToast;
     private SharedPreferences mSharedPreferences;
-    // 引擎类型
-    private String mEngineType = SpeechConstant.TYPE_CLOUD;
+    private String mEngineType = SpeechConstant.TYPE_CLOUD;    // 引擎类型
 
     private boolean mTranslateEnable = false;
 
-    InputActivity myContext = this;
+    private VoiceActivity mContext = this;
 
     // ---------------
 
@@ -64,127 +58,21 @@ public class InputActivity extends AppCompatActivity {
 
     private TextView mTextMessage;
 
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            switch (item.getItemId()) {
-                case R.id.navigation_home:
-                    mTextMessage.setText(R.string.title_fix);
-                    return true;
-                case R.id.navigation_dashboard:
-
-                    int ret = 0;    // return value
-
-                    mTextMessage.setText(R.string.title_pause);
-                    // 移动数据分析，收集开始听写事件
-                    FlowerCollector.onEvent(InputActivity.this, "iat_recognize");
-
-                    mResultText.setText(null);// 清空显示内容
-                    mIatResults.clear();
-                    // 设置参数
-                    setParam();
-//                    boolean isShowDialog = mSharedPreferences.getBoolean(
-//                            getString(R.string.pref_key_iat_show), true);
-
-                    boolean isShowDialog = false;
-//                    if (isShowDialog) {
-//                        // 显示听写对话框
-//                        mIatDialog.setListener(mRecognizerDialogListener);
-//                        mIatDialog.show();
-//                        showTip("开始听写");
-//                    } else {
-                        // 不显示听写对话框
-                        ret = mIat.startListening(mRecognizerListener);
-                        if (ret != ErrorCode.SUCCESS) {
-                            showTip("听写失败,错误码：" + ret);
-                        } else {
-                            showTip("开始听写");
-                        }
-//                    }
-                    return true;
-                case R.id.navigation_notifications:
-                    mTextMessage.setText(R.string.title_submit);
-                    Intent i = new Intent();
-                    i.putExtra("input", "Something has been input.");
-                    setResult(RESULT_OF_INPUT_BTN, i);
-                    finish();
-                    return true;
-            }
-            return false;
-        }
-
-        /**
-         * 参数设置
-         *
-         * @return
-         */
-        public void setParam() {
-            // 清空参数
-            mIat.setParameter(SpeechConstant.PARAMS, null);
-
-            // 设置听写引擎
-            mIat.setParameter(SpeechConstant.ENGINE_TYPE, mEngineType);
-            // 设置返回结果格式
-            mIat.setParameter(SpeechConstant.RESULT_TYPE, "json");
-
-//            this.mTranslateEnable = mSharedPreferences.getBoolean( this.getString(R.string.pref_key_translate), false );
-            if( mTranslateEnable ){
-                Log.i( TAG, "translate enable" );
-                mIat.setParameter( SpeechConstant.ASR_SCH, "1" );
-                mIat.setParameter( SpeechConstant.ADD_CAP, "translate" );
-                mIat.setParameter( SpeechConstant.TRS_SRC, "its" );
-            }
-
-//            String lag = mSharedPreferences.getString("iat_language_preference",
-//                    "mandarin");
-//            if (lag.equals("en_us")) {
-//                // 设置语言
-//                mIat.setParameter(SpeechConstant.LANGUAGE, "en_us");
-//                mIat.setParameter(SpeechConstant.ACCENT, null);
-//
-//                if( mTranslateEnable ){
-//                    mIat.setParameter( SpeechConstant.ORI_LANG, "en" );
-//                    mIat.setParameter( SpeechConstant.TRANS_LANG, "cn" );
-//                }
-//            } else {
-                // 设置语言
-                mIat.setParameter(SpeechConstant.LANGUAGE, "zh_cn");
-                // 设置语言区域
-                mIat.setParameter(SpeechConstant.ACCENT, null);
-
-//                if( mTranslateEnable ){
-//                    mIat.setParameter( SpeechConstant.ORI_LANG, "cn" );
-//                    mIat.setParameter( SpeechConstant.TRANS_LANG, "en" );
-//                }
-//            }
-
-            // 设置语音前端点:静音超时时间，即用户多长时间不说话则当做超时处理
-//            mIat.setParameter(SpeechConstant.VAD_BOS, mSharedPreferences.getString("iat_vadbos_preference", "4000"));
-
-            // 设置语音后端点:后端点静音检测时间，即用户停止说话多长时间内即认为不再输入， 自动停止录音
-//            mIat.setParameter(SpeechConstant.VAD_EOS, mSharedPreferences.getString("iat_vadeos_preference", "1000"));
-
-            // 设置标点符号,设置为"0"返回结果无标点,设置为"1"返回结果有标点
-//            mIat.setParameter(SpeechConstant.ASR_PTT, mSharedPreferences.getString("iat_punc_preference", "1"));
-
-            // 设置音频保存路径，保存音频格式支持pcm、wav，设置路径为sd卡请注意WRITE_EXTERNAL_STORAGE权限
-            // 注：AUDIO_FORMAT参数语记需要更新版本才能生效
-//            mIat.setParameter(SpeechConstant.AUDIO_FORMAT,"wav");
-//            mIat.setParameter(SpeechConstant.ASR_AUDIO_PATH, Environment.getExternalStorageDirectory()+"/msc/iat.wav");
-        }
-
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_input);
+        setContentView(R.layout.activity_voice);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-        mTextMessage = (TextView) findViewById(R.id.message);
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
 
         // 将“12345678”替换成您申请的APPID，申请地址：http://www.xfyun.cn
         // 请勿在“=”与appid之间添加任何空字符或者转义符
@@ -202,10 +90,128 @@ public class InputActivity extends AppCompatActivity {
 //        mSharedPreferences = getSharedPreferences(IatSettings.PREFER_NAME,
 //                Activity.MODE_PRIVATE);
         mToast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
-        mResultText = ((TextView) findViewById(R.id.message));
-//        setParam(
+
+        mTextMessage = (TextView) findViewById(R.id.voiceTextView);
+        mResultText = mTextMessage;
+
+        Button speakBtn = (Button) findViewById(R.id.speakBtn);
+        Button submitBtn = (Button) findViewById(R.id.submitBtn);
+
+
+        speakBtn.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        int ret = 0;    // return value
+
+                        mTextMessage.setText(R.string.title_pause);
+                        // 移动数据分析，收集开始听写事件
+                        FlowerCollector.onEvent(mContext, "iat_recognize");
+
+                        mResultText.setText(null);// 清空显示内容
+                        mIatResults.clear();
+                        // 设置参数
+                        setParam();
+//                    boolean isShowDialog = mSharedPreferences.getBoolean(
+//                            getString(R.string.pref_key_iat_show), true);
+
+                        boolean isShowDialog = false;
+//                    if (isShowDialog) {
+//                        // 显示听写对话框
+//                        mIatDialog.setListener(mRecognizerDialogListener);
+//                        mIatDialog.show();
+//                        showTip("开始听写");
+//                    } else {
+                        // 不显示听写对话框
+                        ret = mIat.startListening(mRecognizerListener);
+                        if (ret != ErrorCode.SUCCESS) {
+                            showTip("听写失败,错误码：" + ret);
+                        } else {
+                            showTip("开始听写");
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        showTip("听写结束");
+                        break;
+                    default:
+                        break;
+                }
+                return false;
+            }
+        });
+
+        submitBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mTextMessage.setText(R.string.title_submit);
+                Intent i = new Intent();
+                i.putExtra("input", "Something has been input.");
+                setResult(RESULT_OF_INPUT_BTN, i);
+                finish();
+            }
+        });
     }
 
+    /**
+     * 参数设置
+     *
+     * @return
+     */
+    public void setParam() {
+        // 清空参数
+        mIat.setParameter(SpeechConstant.PARAMS, null);
+
+        // 设置听写引擎
+        mIat.setParameter(SpeechConstant.ENGINE_TYPE, mEngineType);
+        // 设置返回结果格式
+        mIat.setParameter(SpeechConstant.RESULT_TYPE, "json");
+
+//            this.mTranslateEnable = mSharedPreferences.getBoolean( this.getString(R.string.pref_key_translate), false );
+        if( mTranslateEnable ){
+            Log.i( TAG, "translate enable" );
+            mIat.setParameter( SpeechConstant.ASR_SCH, "1" );
+            mIat.setParameter( SpeechConstant.ADD_CAP, "translate" );
+            mIat.setParameter( SpeechConstant.TRS_SRC, "its" );
+        }
+
+//            String lag = mSharedPreferences.getString("iat_language_preference",
+//                    "mandarin");
+//            if (lag.equals("en_us")) {
+//                // 设置语言
+//                mIat.setParameter(SpeechConstant.LANGUAGE, "en_us");
+//                mIat.setParameter(SpeechConstant.ACCENT, null);
+//
+//                if( mTranslateEnable ){
+//                    mIat.setParameter( SpeechConstant.ORI_LANG, "en" );
+//                    mIat.setParameter( SpeechConstant.TRANS_LANG, "cn" );
+//                }
+//            } else {
+        // 设置语言
+        mIat.setParameter(SpeechConstant.LANGUAGE, "zh_cn");
+        // 设置语言区域
+        mIat.setParameter(SpeechConstant.ACCENT, null);
+
+//                if( mTranslateEnable ){
+//                    mIat.setParameter( SpeechConstant.ORI_LANG, "cn" );
+//                    mIat.setParameter( SpeechConstant.TRANS_LANG, "en" );
+//                }
+//            }
+
+        // 设置语音前端点:静音超时时间，即用户多长时间不说话则当做超时处理
+//            mIat.setParameter(SpeechConstant.VAD_BOS, mSharedPreferences.getString("iat_vadbos_preference", "4000"));
+
+        // 设置语音后端点:后端点静音检测时间，即用户停止说话多长时间内即认为不再输入， 自动停止录音
+//            mIat.setParameter(SpeechConstant.VAD_EOS, mSharedPreferences.getString("iat_vadeos_preference", "1000"));
+
+        // 设置标点符号,设置为"0"返回结果无标点,设置为"1"返回结果有标点
+//            mIat.setParameter(SpeechConstant.ASR_PTT, mSharedPreferences.getString("iat_punc_preference", "1"));
+
+        // 设置音频保存路径，保存音频格式支持pcm、wav，设置路径为sd卡请注意WRITE_EXTERNAL_STORAGE权限
+        // 注：AUDIO_FORMAT参数语记需要更新版本才能生效
+//            mIat.setParameter(SpeechConstant.AUDIO_FORMAT,"wav");
+//            mIat.setParameter(SpeechConstant.ASR_AUDIO_PATH, Environment.getExternalStorageDirectory()+"/msc/iat.wav");
+    }
 
     /**
      * 初始化监听器。
@@ -261,15 +267,13 @@ public class InputActivity extends AppCompatActivity {
 //            if( mTranslateEnable ){
 //                printTransResult( results );
 //            }else{
-                printResult(results);
+            printResult(results);
 //            }
 
             if (isLast) {
                 // TODO 最后的结果
             }
         }
-
-
 
         private void printResult(RecognizerResult results) {
             String text = JsonParser.parseIatResult(results.getResultString());
@@ -310,5 +314,6 @@ public class InputActivity extends AppCompatActivity {
             //	}
         }
     };
+
 
 }

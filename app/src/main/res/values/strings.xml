@@ -5,4 +5,5 @@
     <string name="title_fix">改错</string>
     <string name="title_pause">开始/暂停</string>
     <string name="title_submit">提交</string>
+    <string name="title_activity_voice">VoiceActivity</string>
 </resources>
