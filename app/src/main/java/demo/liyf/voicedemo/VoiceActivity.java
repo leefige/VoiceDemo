@@ -144,9 +144,9 @@ public class VoiceActivity extends AppCompatActivity {
         submitBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mTextMessage.setText(R.string.title_submit);
                 Intent i = new Intent();
-                i.putExtra("input", "Something has been input.");
+                String resultText = mResultText.getText().toString();
+                i.putExtra("input", resultText);
                 setResult(RESULT_OF_INPUT_BTN, i);
                 finish();
             }
